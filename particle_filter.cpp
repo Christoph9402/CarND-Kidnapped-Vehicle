@@ -113,7 +113,7 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
    */
   
 	for (unsigned int i=0;i<observations.size();i++){
-    //initialize the minimum distane with a unrealistically large value
+    //initialize the minimum distance
     	double min_dist = numeric_limits<double>::max();
     // initialize the elementnumber for the lowest distance as -1
     	int no_min_dist = -1;
@@ -158,6 +158,7 @@ for(int i=0;i<num_particles;i++){
   vector<LandmarkObs> Obs_transformed;
   vector<LandmarkObs> landmark_Range;
   particles[i].weight=1.0;
+  
   //Transform Coordinates (formulas lesson5.17)
   double x_transformed, y_transformed;
   for(unsigned int j=0;j<observations.size();j++){
@@ -205,10 +206,13 @@ void ParticleFilter::resample() {
    * NOTE: You may find std::discrete_distribution helpful here.
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
-
+  
    //Max weight
   double mw=numeric_limits<double>::min();
+  vector<double> weights;
+  
   for(unsigned int i=0;i<num_particles;i++){
+    weights.push_back(particles[i].weight);
   	if(particles[i].weight > mw){
     	mw=particles[i].weight;
     } //end if
@@ -216,23 +220,29 @@ void ParticleFilter::resample() {
   //Distributions
   std::random_device rand; 
   std::mt19937 generator(rand());
-  std::discrete_distribution<int> int_distrib(0,num_particles-1);
+  std::discrete_distribution<int> int_distrib(weights.begin(),weights.end());
   std::uniform_real_distribution<double> double_distrib(0.0,mw);
     
   //using code explained by sebastian in lesson 4.20
   vector<Particle> new_p(num_particles);
-  int index = int_distrib(generator);
-  double b=0.0;
+  
+  int index;
+  double b;
   
   for (int i=0;i<num_particles;i++){
+    index = int_distrib(generator);
+    b=0.0;
+    
     b+=2.0*double_distrib(generator);
     while(b>weights[index]){
       b-=weights[index];
-      index=(1+index)& num_particles;
+      index=(1+index) % num_particles;
     }
-   new_p.push_back(particles[index]);
+    new_p[i]=particles[index];
+   //new_p.push_back(particles[index]);
   }
   particles=new_p;
+ 
 }
 
 void ParticleFilter::SetAssociations(Particle& particle, 
